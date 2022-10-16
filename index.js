@@ -110,3 +110,7 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 client.login(token).catch(console.error);
+
+client.on('ready', () => {
+  client.user.setStatus("online");
+});
