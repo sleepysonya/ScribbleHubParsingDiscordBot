@@ -27,7 +27,7 @@ module.exports = {
       await interaction.reply({
         content: "Please enter a valid link",
         ephemeral: true,
-      });
+      }).then(() => client.close());
       return;
     }
     const novel_id = link.split("scribblehub.com/series/")[1].split("/")[0];
@@ -52,7 +52,7 @@ module.exports = {
           content: `Novel [${novel_name}](${link}) added to your list`,
           ephemeral: true,
         }
-      );
+      ).then(() => (client.close())).then(() => console.log(`Novel ${novel_name} added`));
     } else {
       if (exist.users.includes(interaction.user.id)) {
         await interaction.editReply(
@@ -60,14 +60,20 @@ module.exports = {
             content: `You are already following [${novel_name}](${link})`,
             ephemeral: true,
           }
-        );
+        ).then(() => (client.close())).then(() => console.log(`Novel ${novel_name} already in list`));
         return;
       }
       console.log("Novel found, updating database");
       await users.updateOne(
         { novel_id },
         { $push: { users: interaction.user.id } }
-      );
+      ).then(() => interaction.editReply(
+        {
+          content: `Novel [${novel_name}](${link}) added to your list`,
+          ephemeral: true,
+        }
+      ))
+      .then(() => (client.close())).then( () => console.log(`Novel ${novel_name} added to user ${interaction.user.id}`));
     }
   },
 };

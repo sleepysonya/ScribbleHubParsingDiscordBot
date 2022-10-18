@@ -5,39 +5,18 @@ const { token } = require("./config.json");
 const { deployCommands } = require("./deploy-commands.js");
 const schedule = require("node-schedule");
 const { fetching_book } = require("./functions/chap_parser");
-const { MongoClient } = require("mongodb");
+const { MongoClient} = require("mongodb");
 const { user, password } = require("./config.json");
 
 const uri = `mongodb+srv://${user}:${password}@cluster0.s0jnsee.mongodb.net/`;
 
-const users = async () => {
-  console.log("Connecting to database");
-  const mongodb = await MongoClient.connect(uri, {
-    useNewUrlParser: true,
-  });
-  const users = mongodb.db("sh-parser").collection("users_novels");
-  return users;
-};
-
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.DirectMessageReactions],
-});
-
-client.commands = new Collection();
-const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs
-  .readdirSync(commandsPath)
-  .filter((file) => file.endsWith(".js"));
-
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
-  client.commands.set(command.data.name, command);
-}
-
-const j = schedule.scheduleJob("5 * * * *", function () {
-  console.log("Checking for new chapters");
-  users().then(async (users) => {
+const u = schedule.scheduleJob("15 * * * * *", async () => {
+  const client = await MongoClient.connect(
+    uri,
+    { useNewUrlParser: true, useUnifiedTopology: true, socketTimeoutMS: 30000, connectTimeoutMS: 30000, maxPoolSize: 10},
+  )
+    const db = await client.db("sh-parser");
+    const users = await db.collection("users_novels");
     users.find({}).forEach(async (novel) => {
       const link = novel.link;
       const novel_id = novel.novel_id;
@@ -56,19 +35,20 @@ const j = schedule.scheduleJob("5 * * * *", function () {
       });
       if (exist === null) {
         console.log("New chapter found");
-        await users.updateOne(
-          { novel_id },
-          {
-            $push: {
-              chapters: {
-                chapter_name,
-                chapter_link,
-                chapter_date,
-                chapter_id,
+        await users
+          .updateOne(
+            { novel_id },
+            {
+              $push: {
+                chapters: {
+                  chapter_name,
+                  chapter_link,
+                  chapter_date,
+                  chapter_id,
+                },
               },
-            },
-          }
-        );
+            }
+          )
         const users_to_notify = novel.users;
         users_to_notify.forEach(async (user) => {
           const user_to_notify = await client.users.fetch(user);
@@ -80,12 +60,34 @@ const j = schedule.scheduleJob("5 * * * *", function () {
             .catch(console.error);
         });
       }
-    });
+      else {
+        console.log("No new chapter found");
+      }
+    })
   });
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageReactions,
+  ],
 });
 
+client.commands = new Collection();
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file) => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath);
+  client.commands.set(command.data.name, command);
+}
+
 client.once("ready", () => {
-  j.on;
+  u.on;
   deployCommands();
   console.log("Ready!");
   client.user.setStatus("online");
@@ -111,6 +113,6 @@ client.on("interactionCreate", async (interaction) => {
 
 client.login(token).catch(console.error);
 
-client.on('ready', () => {
+client.on("ready", () => {
   client.user.setStatus("online");
 });

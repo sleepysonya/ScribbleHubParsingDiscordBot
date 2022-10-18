@@ -3,8 +3,8 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
 } = require("discord.js");
-const { MongoClient } = require("mongodb");
 const { user, password } = require("../config.json");
+const { MongoClient } = require("mongodb");
 const uri = `mongodb+srv://${user}:${password}@cluster0.s0jnsee.mongodb.net/`;
 
 
@@ -16,7 +16,7 @@ module.exports = {
     const mongodb = await MongoClient.connect(uri, {
       useNewUrlParser: true,
     });
-    const users = mongodb.db("sh-parser").collection("users_novels");
+    const users = await mongodb.db("sh-parser").collection("users_novels");
     const novels = await users.find({ users: interaction.user.id }).toArray()
     let novel_list = [];
     const buttons = new ActionRowBuilder().addComponents(
@@ -36,7 +36,6 @@ module.exports = {
     });
 
     const filter = (i) => i.user.id === interaction.user.id;
-    console.log(message)
     const collector = message.createMessageComponentCollector({
         filter,
         time: 15000,
@@ -49,7 +48,8 @@ module.exports = {
             content: `Novel deleted`,
             ephemeral: true,
             components: [],
-        });
+        }).then(() => (mongodb.close())).then(() => (collector.stop())).then(() => console.log(`Novel ${i.customId} deleted`));
     });
+    
 },
 };
