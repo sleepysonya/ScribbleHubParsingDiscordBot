@@ -8,8 +8,8 @@ const regex =
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("add")
-    .setDescription("Get the novel you want to follow")
+    .setName("addchannel")
+    .setDescription("Get the novel you want to follow on this channel")
     .addStringOption((option) =>
       option
         .setName("link")
@@ -46,7 +46,7 @@ module.exports = {
     // Reminder: Add more checking conditons
     if (exist === null) {
       console.log("Novel not found, adding to database");
-      await users.insertOne({ link, novel_name, novel_id, users: [interaction.user.id], channels: [] });
+      await users.insertOne({ link, novel_name, novel_id, users: [], channels: [interaction.channel.id] });
       await interaction.editReply(
         {
           content: `Novel [${novel_name}](${link}) added to your list`,
@@ -66,14 +66,14 @@ module.exports = {
       console.log("Novel found, updating database");
       await users.updateOne(
         { novel_id },
-        { $push: { users: interaction.user.id } }
+        { $push: { channels: [interaction.channel.id]} }
       ).then(() => interaction.editReply(
         {
           content: `Novel [${novel_name}](${link}) added to your list`,
           ephemeral: true,
         }
       ))
-      .then(() => (client.close())).then( () => console.log(`Novel ${novel_name} added to user ${interaction.user.id}`));
+      .then(() => (client.close())).then( () => console.log(`Novel ${novel_name} added to channel ${interaction.channel.id}`));
     }
   },
 };
