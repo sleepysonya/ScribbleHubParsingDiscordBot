@@ -64,7 +64,7 @@ const u = schedule.scheduleJob("0 * * * * *", async () => {
         
         return;
       }
-      if (users_to_notify !== null) {
+      if (users_to_notify !== null && channels_to_notify !== null) {
         users_to_notify.forEach(async (user) => {
           const user_to_notify = await client.users.fetch(user);
           console.log(`Notifying ${user_to_notify.username}`);
@@ -75,7 +75,7 @@ const u = schedule.scheduleJob("0 * * * * *", async () => {
             .catch(console.error);
         });
       }
-      if (channels_to_notify !== null) {
+      if (channels_to_notify !== null && channels_to_notify.length > 0) {
       channels_to_notify.forEach(async (channel) => {
         const channel_to_notify = await client.channels.fetch(channel);
         console.log(`Notifying ${channel_to_notify.name}`);
